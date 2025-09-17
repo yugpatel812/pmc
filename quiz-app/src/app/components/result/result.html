@@ -1,0 +1,17 @@
+<h2>Results</h2>
+    <table border="1" cellpadding="8">
+      <tr>
+        <th>Question</th>
+        <th>Selected</th>
+        <th>Correct</th>
+        <th>Result</th>
+      </tr>
+      <tr *ngFor="let r of results">
+        <td>{{ r.question }}</td>
+        <td>{{ r.selected }}</td>
+        <td>{{ r.correct }}</td>
+        <td [style.color]="r.isCorrect ? 'green' : 'red'">
+          {{ r.isCorrect ? '✔️' : '❌' }}
+        </td>
+      </tr>
+    </table>

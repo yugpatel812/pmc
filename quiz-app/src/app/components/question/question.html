@@ -1,0 +1,11 @@
+<div>
+      <p><b>{{ question.id }}.</b> {{ question.text }}</p>
+      <div *ngFor="let opt of question.options">
+        <label>
+          <input type="radio" [name]="'q'+question.id" [value]="opt" 
+            (change)="selectAnswer(opt)" [checked]="question.selectedAnswer === opt" />
+          {{ opt }}
+        </label>
+      </div>
+    </div>
+    <hr />

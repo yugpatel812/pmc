@@ -1,0 +1,6 @@
+<h2>Start Quiz</h2>
+    <form (ngSubmit)="startQuiz()">
+      <input [(ngModel)]="name" name="name" placeholder="Enter Name" required />
+      <input [(ngModel)]="email" name="email" placeholder="Enter Email" required />
+      <button type="submit">Start</button>
+    </form>

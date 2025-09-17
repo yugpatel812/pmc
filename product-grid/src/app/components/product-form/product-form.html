@@ -1,0 +1,27 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="simple-form">
+  <label>SKU
+    <input formControlName="sku" />
+  </label>
+
+  <label>Name
+    <input formControlName="name" />
+  </label>
+
+  <label>Description
+    <input formControlName="description" />
+  </label>
+
+  <label>Colour
+    <input formControlName="colour" />
+  </label>
+
+  <label>Price
+    <input type="number" formControlName="price" />
+  </label>
+
+  <label>Type
+    <input formControlName="type" />
+  </label>
+
+  <button type="submit" [disabled]="form.invalid">Add Product</button>
+</form>

@@ -1,0 +1,46 @@
+{
+  "weather": [
+    {
+      "city": "Vadodara",
+      "temperature": 28,
+      "windspeed": 15,
+      "pressure": 1012,
+      "rain": 0.5
+    },
+    {
+      "city": "New Delhi",
+      "temperature": 32,
+      "windspeed": 18,
+      "pressure": 1008,
+      "rain": 0
+    },
+    {
+      "city": "Mumbai",
+      "temperature": 25,
+      "windspeed": 22,
+      "pressure": 1010,
+      "rain": 15.3
+    },
+    {
+      "city": "Bengaluru",
+      "temperature": 22,
+      "windspeed": 10,
+      "pressure": 1014,
+      "rain": 2.1
+    },
+    {
+      "city": "Chennai",
+      "temperature": 35,
+      "windspeed": 17,
+      "pressure": 1006,
+      "rain": 1.2
+    },
+    {
+      "city": "Kolkata",
+      "temperature": 29,
+      "windspeed": 14,
+      "pressure": 1011,
+      "rain": 0.2
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+<div>
+      <h2>Quiz</h2>
+      <div>⏳ Time Left: {{ (quizService.timeLeft$ | async)! | timeFormat }}</div>
+      <app-question
+        *ngFor="let q of (quizService.questions$ | async)!"
+        [question]="q"
+        (answerSelected)="onAnswerSelected(q.id, $event)">
+      </app-question>
+      <button (click)="finish()">Submit Quiz</button>
+    </div>

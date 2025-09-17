@@ -1,0 +1,31 @@
+<div class="weather-app">
+  <h1>Weather App</h1>
+
+  <div class="search-container">
+    <input type="text" [(ngModel)]="cityName" (keyup.enter)="getWeather()" placeholder="Enter city name">
+    <button (click)="getWeather()">Search</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <p>Loading weather...</p>
+  </div>
+
+  <div *ngIf="error" class="error">
+    <p>{{ error }}</p>
+    <button (click)="getWeather()">Retry</button>
+  </div>
+
+  <div *ngIf="weatherData" class="weather-content">
+    <h2>{{ weatherData.city }}</h2>
+    <h3>{{ weatherData.temperature | temperature : unit | number:'1.0-0' }}°{{ unit }}</h3>
+    <button (click)="toggleUnit()">
+      Switch to {{ unit === 'C' ? '°F' : '°C' }}
+    </button>
+
+    <div class="details">
+      <p><b>Wind Speed:</b> {{ weatherData.windspeed }} km/h</p>
+      <p><b>Pressure:</b> {{ weatherData.pressure }} hPa</p>
+      <p *ngIf="weatherData.rain"><b>Rain:</b> {{ weatherData.rain }} mm</p>
+    </div>
+  </div>
+</div>

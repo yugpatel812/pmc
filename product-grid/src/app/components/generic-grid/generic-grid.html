@@ -1,0 +1,10 @@
+<table class="grid">
+  <thead>
+    <tr><th *ngFor="let c of columns">{{ c.label }}</th></tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let row of data" (click)="rowClick.emit(row)">
+      <td *ngFor="let c of columns">{{ row[c.key] }}</td>
+    </tr>
+  </tbody>
+</table>
