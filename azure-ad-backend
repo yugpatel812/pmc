@@ -1,0 +1,263 @@
+Awesome — let’s lock this in with a final, minimal, production-style Spring Boot backend for Azure AD JWT validation ✅
+No Google OAuth leftovers, no custom JWT filters — clean & correct.
+
+I’ll give you exact files you need, what each does, and how you fetch user from JWT and return a User object for testing.
+
+✅ What this backend will do
+
+Validate Azure AD access token (JWT)
+
+Secure APIs using Spring Security
+
+Extract user info from JWT
+
+Store / fetch user from DB
+
+Return user object from /api/me
+
+📁 Final File Structure
+src/main/java
+ └── com.example.demo
+     ├── config
+     │   └── SecurityConfig.java
+     ├── controller
+     │   └── UserController.java
+     ├── entity
+     │   └── User.java
+     ├── repository
+     │   └── UserRepository.java
+     ├── service
+     │   └── UserService.java
+     └── DemoApplication.java
+
+src/main/resources
+ └── application.yml
+
+1️⃣ Dependencies (pom.xml)
+<dependencies>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <!-- DB (use H2/MySQL as needed) -->
+    <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <scope>runtime</scope>
+    </dependency>
+
+</dependencies>
+
+2️⃣ application.yml (SECURE KEY HANDLING)
+
+👉 No private keys stored
+Azure public keys are fetched automatically via JWKS.
+
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/<TENANT_ID>/v2.0
+          audiences:
+            - <CLIENT_ID>
+
+
+🔐 This replaces all key files, secrets, and JwtService logic
+
+3️⃣ SecurityConfig.java
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/public/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2ResourceServer(oauth2 ->
+                oauth2.jwt()
+            );
+
+        return http.build();
+    }
+}
+
+
+✅ JWT extraction
+✅ JWT validation
+✅ SecurityContext setup
+
+All automatic.
+
+4️⃣ User Entity (DB model)
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true)
+    private String email;
+
+    private String name;
+
+    @Column(unique = true)
+    private String azureOid;
+
+    // getters & setters
+}
+
+5️⃣ UserRepository.java
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    Optional<User> findByEmail(String email);
+}
+
+6️⃣ UserService.java (JWT → USER mapping)
+@Service
+public class UserService {
+
+    private final UserRepository userRepository;
+
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    public User getOrCreateUserFromJwt(Jwt jwt) {
+
+        String email = jwt.getClaim("preferred_username");
+        String name = jwt.getClaim("name");
+        String oid  = jwt.getClaim("oid");
+
+        return userRepository.findByEmail(email)
+            .orElseGet(() -> {
+                User user = new User();
+                user.setEmail(email);
+                user.setName(name);
+                user.setAzureOid(oid);
+                return userRepository.save(user);
+            });
+    }
+}
+
+
+🧠 This replaces:
+
+CustomOAuth2UserService
+
+OAuth2AuthenticationSuccessHandler
+
+JwtFilter
+
+JwtService
+
+7️⃣ UserController.java (TEST ENDPOINT)
+@RestController
+@RequestMapping("/api")
+public class UserController {
+
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping("/me")
+    public User me(@AuthenticationPrincipal Jwt jwt) {
+        return userService.getOrCreateUserFromJwt(jwt);
+    }
+}
+
+🔁 Full Request Flow (Now crystal clear)
+Angular
+ └─ Authorization: Bearer <access_token>
+        ↓
+Spring Security Filter
+        ↓
+JWT validated with Azure public key
+        ↓
+Jwt stored in SecurityContext
+        ↓
+@AuthenticationPrincipal Jwt jwt
+        ↓
+UserService → DB
+        ↓
+User returned
+
+🧪 How to TEST
+
+Login via Angular (Azure AD)
+
+Call backend:
+
+GET http://localhost:8080/api/me
+Authorization: Bearer <access_token>
+
+
+Response:
+
+{
+  "id": 1,
+  "email": "yug@company.com",
+  "name": "Yug Patel",
+  "azureOid": "aad-unique-id"
+}
+
+🧠 Final Mental Model (Lock this 🔒)
+
+Angular authenticates.
+Azure issues JWT.
+Spring validates JWT.
+JWT becomes Principal.
+User is derived from JWT.
+
+If you want next:
+
+🔐 Role-based auth (@PreAuthorize)
+
+🔄 Token refresh strategy
+
+🧱 Multi-tenant Azure AD
+
+🧪 Debug JWT failures like a pro
+
+Say the word 👌
