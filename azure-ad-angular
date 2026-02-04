@@ -1,0 +1,248 @@
+Perfect — now let’s wire the Angular side end-to-end so it cleanly talks to Azure AD and your Spring Boot backend 🚀
+I’ll give you exact steps, libs to install, config, and working sample pages (login + dashboard).
+
+🧠 Big Picture (Angular side only)
+Login Page → Azure AD → Redirect back → Store token → Call backend → Dashboard
+
+1️⃣ Azure AD setup (one-time)
+In Azure Portal → App Registrations
+
+Create Single Page Application (SPA)
+
+
+Note these values (VERY IMPORTANT):
+
+Tenant ID
+
+Client ID
+
+Authentication tab:
+
+Platform: Single-page application
+
+Redirect URIs:
+
+http://localhost:4200
+http://localhost:4200/auth
+
+API permissions:
+
+Microsoft Graph → openid, profile, email
+
+(Optional) Your backend scope later
+
+2️⃣ Create Angular project
+ng new azure-ad-login
+cd azure-ad-login
+ng serve
+
+3️⃣ Install required libraries
+npm install @azure/msal-browser @azure/msal-angular
+
+
+That’s all. No extra auth libs needed.
+
+4️⃣ MSAL Configuration (core setup)
+src/app/auth-config.ts
+import { Configuration } from '@azure/msal-browser';
+
+export const msalConfig: Configuration = {
+  auth: {
+    clientId: 'YOUR_CLIENT_ID',
+    authority: 'https://login.microsoftonline.com/YOUR_TENANT_ID',
+    redirectUri: 'http://localhost:4200'
+  },
+  cache: {
+    cacheLocation: 'sessionStorage',
+    storeAuthStateInCookie: false
+  }
+};
+
+export const loginRequest = {
+  scopes: ['openid', 'profile', 'email']
+};
+
+5️⃣ App Module Configuration
+app.module.ts
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+
+import {
+  MsalModule,
+  MsalRedirectComponent,
+  MsalInterceptor,
+  MSAL_INSTANCE,
+  MSAL_GUARD_CONFIG,
+  MsalGuard
+} from '@azure/msal-angular';
+
+import { PublicClientApplication, InteractionType } from '@azure/msal-browser';
+import { msalConfig, loginRequest } from './auth-config';
+
+export function MSALInstanceFactory() {
+  return new PublicClientApplication(msalConfig);
+}
+
+export function MSALGuardConfigFactory() {
+  return {
+    interactionType: InteractionType.Redirect,
+    authRequest: loginRequest
+  };
+}
+
+@NgModule({
+  declarations: [],
+  imports: [
+    BrowserModule,
+    MsalModule
+  ],
+  providers: [
+    {
+      provide: MSAL_INSTANCE,
+      useFactory: MSALInstanceFactory
+    },
+    {
+      provide: MSAL_GUARD_CONFIG,
+      useFactory: MSALGuardConfigFactory
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: MsalInterceptor,
+      multi: true
+    },
+    MsalGuard
+  ],
+  bootstrap: [MsalRedirectComponent]
+})
+export class AppModule {}
+
+
+⚠️ MsalRedirectComponent is mandatory for redirect flow.
+
+6️⃣ Routing (Login → Dashboard)
+app-routing.module.ts
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { MsalGuard } from '@azure/msal-angular';
+import { LoginComponent } from './login/login.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
+
+const routes: Routes = [
+  { path: '', component: LoginComponent },
+  {
+    path: 'dashboard',
+    component: DashboardComponent,
+    canActivate: [MsalGuard]
+  }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule {}
+
+7️⃣ Login Page
+login.component.ts
+import { Component } from '@angular/core';
+import { MsalService } from '@azure/msal-angular';
+
+@Component({
+  selector: 'app-login',
+  template: `
+    <h2>Login</h2>
+    <button (click)="login()">Login with Azure AD</button>
+  `
+})
+export class LoginComponent {
+
+  constructor(private msalService: MsalService) {}
+
+  login() {
+    this.msalService.loginRedirect();
+  }
+}
+
+8️⃣ Dashboard Page (Read user info)
+dashboard.component.ts
+import { Component, OnInit } from '@angular/core';
+import { MsalService } from '@azure/msal-angular';
+
+@Component({
+  selector: 'app-dashboard',
+  template: `
+    <h2>Dashboard</h2>
+    <p>Name: {{name}}</p>
+    <p>Email: {{email}}</p>
+    <button (click)="logout()">Logout</button>
+  `
+})
+export class DashboardComponent implements OnInit {
+
+  name = '';
+  email = '';
+
+  constructor(private msalService: MsalService) {}
+
+  ngOnInit() {
+    const account = this.msalService.instance.getActiveAccount();
+    if (account) {
+      this.name = account.name ?? '';
+      this.email = account.username ?? '';
+    }
+  }
+
+  logout() {
+    this.msalService.logoutRedirect();
+  }
+}
+
+9️⃣ Call Spring Boot Backend (JWT auto-attached)
+Simple API call example
+this.http.get('http://localhost:8080/api/me')
+  .subscribe(res => console.log(res));
+
+
+👉 MsalInterceptor automatically attaches:
+
+Authorization: Bearer <access_token>
+
+
+No manual header code needed.
+
+🔁 End-to-End Flow (Final)
+User → Login Page
+Angular → Azure AD redirect
+Azure → Redirect back with token
+Angular → Stores token
+Angular → Calls Spring API
+Spring → Validates JWT
+Spring → Returns User
+Angular → Dashboard
+
+❌ Common Mistakes (avoid these)
+Mistake	Result
+Wrong redirect URI	Azure error
+Using oauth2Login in Spring	Redirect loop
+Using ID token for backend	401
+Not using interceptor	No JWT sent
+🎯 Interview-level summary
+
+“In Angular we use MSAL to redirect users to Azure AD. Azure returns tokens to a registered redirect URI. MSAL stores the access token and automatically attaches it to backend API calls. Spring Boot validates the Azure-issued JWT as a resource server.”
+
+If you want next, I can:
+
+🔐 Add backend API scopes
+
+🔄 Silent token refresh
+
+🧱 Multiple environments (dev/prod)
+
+🧪 Debug Azure login issues
+
+🎯 Corporate-ready folder structure
+
+Just tell me 👍
+
+ChatGPT can make mistakes. Check important info. See Cookie Preferences.
